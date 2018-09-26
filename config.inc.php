@@ -10,11 +10,25 @@ const SENSOR_LOSE 		 =   3;  //掉线
 const SENSOR_WARN 		 =   4;  //预警
 
 $setting = array(
-        'worker_num' => 1,
-        'daemonize' => false,
-        'max_request' => 10000,
-        'dispatch_mode' => 2,
-        'debug_mode'=> 1,
-        'task_worker_num' => 1,
-        'log_file' => '/var/www/html/smartHome/tmp/'.date('Ymd', time()).'.log'
-    );
+    'worker_num' => 1,
+    'daemonize' => false,
+    'max_request' => 10000,
+    'dispatch_mode' => 2,
+    'debug_mode'=> 1,
+    'task_worker_num' => 1,
+    'log_file' => '/var/www/html/smartHome/tmp/'.date('Ymd', time()).'.log',
+    'tcp_enable' => true,
+    'tcp' => [
+        ["tcp_host"=>"0.0.0.0","tcp_port"=>9505,"tcp_mode"=>SWOOLE_TCP],
+        ["tcp_host"=>"0.0.0.0","tcp_port"=>3389,"tcp_mode"=>SWOOLE_TCP]
+    ]
+);
+
+//MySQL
+const DB_URI          =   "mysql:host=127.0.0.1;port=3306;dbname=smartHome";
+const DB_PASS         =   "123456";
+const DB_USER         =   "root";
+
+//HTTP
+const HTTP_HOST     =    '0.0.0.0';
+const HTTP_PORT     =    80;

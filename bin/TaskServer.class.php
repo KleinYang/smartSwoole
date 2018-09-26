@@ -9,7 +9,7 @@ class Server
     private $port;
 
     public function __construct($setting) {
-        $this->serv = new swoole_server("0.0.0.0", 80);
+        $this->serv = new swoole_server(HTTP_HOST, HTTP_PORT);
 
         $this->serv->set($setting);
 
@@ -21,7 +21,12 @@ class Server
         $this->serv->on('WorkerStart', array($this, 'onWorkerStart'));
         $this->serv->on('Task', array($this, 'onTask'));
         $this->serv->on('Finish', array($this, 'onFinish'));
-        $this->serv->addlistener("0.0.0.0" , 9505 , SWOOLE_TCP );
+        if ($setting['tcp_enable'] === true) {
+            foreach ($setting['tcp'] as $k => $v) {
+                $this->serv->addlistener($v['tcp_host'] , $v['tcp_port'] , $v['tcp_mode'] );
+            }
+        }
+        
         $this->serv->start();
     }
 
@@ -133,9 +138,9 @@ class Server
     //初始化pdo
     public static function initPdo() {
         $this->$pdo = new PDO(
-            "mysql:host=127.0.0.1;port=3306;dbname=smartHome", 
-            "root", 
-            "!MySQL21404991", 
+            DB_URI, 
+            DB_USER, 
+            DB_PASS, 
             array(
                 PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES 'UTF8';",
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
