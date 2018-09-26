@@ -1,0 +1,177 @@
+<?php
+class Server
+{
+    private $serv;
+    private $fd;
+    private $pi;
+    private $app;
+    private $pdo;
+    private $port;
+
+    public function __construct($setting) {
+        $this->serv = new swoole_server("0.0.0.0", 80);
+
+        $this->serv->set($setting);
+
+        $this->serv->on('Start', array($this, 'onStart'));
+        $this->serv->on('Connect', array($this, 'onConnect'));
+        $this->serv->on('Receive', array($this, 'onReceive'));
+        $this->serv->on('Close', array($this, 'onClose'));
+        // bind callback
+        $this->serv->on('WorkerStart', array($this, 'onWorkerStart'));
+        $this->serv->on('Task', array($this, 'onTask'));
+        $this->serv->on('Finish', array($this, 'onFinish'));
+        $this->serv->addlistener("0.0.0.0" , 9505 , SWOOLE_TCP );
+        $this->serv->start();
+    }
+
+    public function onStart( $serv ) {
+        echo "Start"."\n";
+    }
+
+    public function onConnect( $serv, $fd, $from_id ) {
+        echo "Client {$fd} connect"."\n";
+        $info = $serv->connection_info($fd, $from_id);
+        // print_r($info);
+        $this->port = $info['server_port'];
+        $this->fd = $fd;
+        //来自app
+        if($info['server_port'] == 80) {
+            $this->app = $fd;
+        }
+        //来自raspberry pi
+        else {
+            $this->pi = $fd;
+        }
+    }
+
+    public function onReceive( swoole_server $serv, $fd, $from_id, $data ) {
+        echo "Get Message From Client {$fd}"."\n";
+        echo "Continue Handle Worker"."\n";
+        echo $data;
+        // print_r($GET);
+        if($this->port == 9505) {
+            $param = array(
+                'fd' => $fd,
+                'pi' => $this->pi,
+                'app' => $this->app,
+                'type' => 1,
+                'data' => json_encode($data)
+            );
+            $serv->task( json_encode($param) );
+
+        }
+        //来自外网
+        else {
+            $GET = $this->getParam($data);
+            $param = array(
+                'fd' => $fd,
+                'pi' => $this->pi,
+                'app' => $this->app,
+                'type' => 2,
+                'data' => json_encode($GET)
+            );
+            $serv->task( json_encode($param) );
+        }
+
+    }
+
+    public function onClose( $serv, $fd, $from_id ) {
+        echo "Client {$fd} close connection"."\n";
+    }
+
+    public function onWorkerStart( $serv , $worker_id) {
+        echo "onWorkerStart"."\n";
+        // 判定是否为Task Worker进程
+        if( $worker_id > $serv->setting['worker_num'] ) {
+            $this->$pdo || $this->initPdo();
+        }
+        
+        // 在Worker进程开启时绑定定时器
+        // 只有当worker_id为0时才添加定时器,避免重复添加
+        // if( $worker_id == 0 ) {
+        //     $check_lose = swoole_timer_tick(5*60*1000, function()use ($serv) {
+        //         $serv->task( 'timer' );
+        //     });
+
+        //     $check_rule = swoole_timer_tick(24*60*60*1000, function()use ($serv) {
+        //         $serv->task( 'rule' );
+        //     });
+        // }
+    }
+
+    /**
+     * @param $serv swoole_server swoole_server对象
+     * @param $task_id int 任务id
+     * @param $from_id int 投递任务的worker_id
+     * @param $data string 投递的数据
+     */
+    public function onTask($serv,$task_id,$from_id, $data) {
+        //来自80的内网管理端口
+        $param = json_decode( $data , true );
+        $type = $param['type'];
+        $fd = $param['fd'];
+        $GET = $param['data'];
+        if ($type == 2) {
+            $this->sendMessage($serv, $fd, $GET);
+            return $data;
+        }else if($type == 1){
+            $data = $GET;
+            $resp = json_encode($data);
+            $serv->send($fd, $resp);
+        }
+        
+        
+    }
+
+    public function onFinish($serv,$task_id, $data) {
+        echo "Task {$task_id} finish"."\n";
+        $param = json_decode( $data , true );
+        $serv->close( $param['fd'] );
+    }
+
+    //初始化pdo
+    public static function initPdo() {
+        $this->$pdo = new PDO(
+            "mysql:host=127.0.0.1;port=3306;dbname=smartHome", 
+            "root", 
+            "!MySQL21404991", 
+            array(
+                PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES 'UTF8';",
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_PERSISTENT => true
+            )
+        );
+    }
+
+    public function getParam($str) 
+    { 
+        $result = array(); 
+        if (strstr($str,'curl') != false) {
+            # code...
+        }
+        preg_match_all("/(?:rest?)(.*)(?: HTTP)/i",$str, $result); 
+        $content = substr($result[1][0], 1); 
+        $param = explode("&", $content);
+        foreach ($param as $k => $v) {
+            $GET[explode('=', $v)[0]] = explode('=', $v)[1];
+        }
+        return $GET;
+    } 
+
+    public function sendMessage($serv, $fd, $data){
+        $resp = "HTTP/1.1 200\r\n";
+        $serv->send($fd, $resp);
+
+        $resp = "Content-Type: text/html; charset=UTF-8\r\nContent-Length: ". strlen($data)+1 ."\r\n";
+        $serv->send($fd, $resp);
+
+        $resp = "\r\n";
+        $serv->send($fd, $resp);
+
+        $resp = json_encode($data);
+        $serv->send($fd, $resp);
+    }
+
+
+}
