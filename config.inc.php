@@ -19,8 +19,8 @@ $setting = array(
     'log_file' => '/var/www/html/smartHome/tmp/'.date('Ymd', time()).'.log',
     'tcp_enable' => true,
     'tcp' => [
-        ["tcp_host"=>"0.0.0.0","tcp_port"=>9505,"tcp_mode"=>SWOOLE_TCP],
-        ["tcp_host"=>"0.0.0.0","tcp_port"=>3389,"tcp_mode"=>SWOOLE_TCP]
+        ["tcp_host"=>"0.0.0.0","tcp_port"=>9505,"tcp_mode"=>SWOOLE_TCP,"class"=>"Demo"],
+        ["tcp_host"=>"0.0.0.0","tcp_port"=>3389,"tcp_mode"=>SWOOLE_TCP,"class"=>"Test"]
     ]
 );
 

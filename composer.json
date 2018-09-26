@@ -1,0 +1,6 @@
+{
+    "autoload": {
+		"classmap": ["app/"],
+    	"files": ["bin/TaskServer.class.php"]
+    }
+}

@@ -1,4 +1,5 @@
 <?php
+
 class Server
 {
     private $serv;
@@ -7,8 +8,10 @@ class Server
     private $app;
     private $pdo;
     private $port;
+    private $tcp_hash;
 
     public function __construct($setting) {
+        self::registe();
         $this->serv = new swoole_server(HTTP_HOST, HTTP_PORT);
 
         $this->serv->set($setting);
@@ -23,6 +26,7 @@ class Server
         $this->serv->on('Finish', array($this, 'onFinish'));
         if ($setting['tcp_enable'] === true) {
             foreach ($setting['tcp'] as $k => $v) {
+                $this->tcp_hash[$v['tcp_port']] = $v['class'];
                 $this->serv->addlistener($v['tcp_host'] , $v['tcp_port'] , $v['tcp_mode'] );
             }
         }
@@ -40,11 +44,11 @@ class Server
         // print_r($info);
         $this->port = $info['server_port'];
         $this->fd = $fd;
-        //来自app
+        //来自http
         if($info['server_port'] == 80) {
             $this->app = $fd;
         }
-        //来自raspberry pi
+        //来自tcp
         else {
             $this->pi = $fd;
         }
@@ -55,26 +59,26 @@ class Server
         echo "Continue Handle Worker"."\n";
         echo $data;
         // print_r($GET);
-        if($this->port == 9505) {
+        if($this->port == 80) {
+            $GET = $this->getParam($data);
             $param = array(
                 'fd' => $fd,
                 'pi' => $this->pi,
                 'app' => $this->app,
                 'type' => 1,
-                'data' => json_encode($data)
+                'data' => json_encode($GET)
             );
             $serv->task( json_encode($param) );
 
         }
         //来自外网
         else {
-            $GET = $this->getParam($data);
             $param = array(
                 'fd' => $fd,
                 'pi' => $this->pi,
                 'app' => $this->app,
-                'type' => 2,
-                'data' => json_encode($GET)
+                'type' => $this->port,
+                'data' => json_encode($data)
             );
             $serv->task( json_encode($param) );
         }
@@ -117,13 +121,14 @@ class Server
         $type = $param['type'];
         $fd = $param['fd'];
         $GET = $param['data'];
-        if ($type == 2) {
+        if ($type == 1) {
             $this->sendMessage($serv, $fd, $GET);
             return $data;
-        }else if($type == 1){
+        }else if($type != 1){
             $data = $GET;
-            $resp = json_encode($data);
-            $serv->send($fd, $resp);
+            $class = 'App\\Tcp\\' . $this->tcp_hash[$type];
+            $class::onReceive($serv, $fd, $data);
+            
         }
         
         
@@ -176,6 +181,16 @@ class Server
 
         $resp = json_encode($data);
         $serv->send($fd, $resp);
+    }
+
+    public static function registe(){
+        spl_autoload_register("Server::loadClass");
+    }
+    public static function loadClass($class){
+        $class=str_replace('\\', '/', $class);
+        $class=__DIR__ . "/../".$class.".php";
+        var_dump($class . '\n');
+        require_once $class;    
     }
 
 
