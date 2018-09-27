@@ -1,5 +1,4 @@
 <?php
-use App;
 
 class Server
 {
@@ -7,7 +6,7 @@ class Server
     private $fd;
     private $pi;
     private $app;
-    private $pdo;
+    private $redis;
     private $port;
     private $tcp_hash;
 
@@ -52,6 +51,10 @@ class Server
         //来自tcp
         else {
             $this->pi = $fd;
+            var_dump($fd);
+            var_dump($this->tcp_hash[$info['server_port']]);
+            $this->redis->set($fd, $this->tcp_hash[$info['server_port']]);
+            $this->redis->get($fd);
         }
     }
 
@@ -99,7 +102,13 @@ class Server
         // if( $worker_id > $serv->setting['worker_num'] ) {
         //     $this->$pdo || $this->initPdo();
         // }
-        
+
+//         if( $worker_id > $serv->setting['worker_num'] ) {
+         $this->redis = new Redis();
+         $this->redis->connect('127.0.0.1', 6379);
+         echo "Connection to server sucessfully\n";
+//         }
+
         // 在Worker进程开启时绑定定时器
         // 只有当worker_id为0时才添加定时器,避免重复添加
         // if( $worker_id == 0 ) {
@@ -131,8 +140,9 @@ class Server
             $resp = $ctrl->onReceive($GET);
             $this->sendMessage($serv, $fd, $resp);
         }else if($type != 1){
-            $class = TCP_PATH . $this->tcp_hash[$type];
-            echo $GET . '------\n';
+            $class = TCP_PATH . $this->redis->get($fd);
+            echo "classname:" . $class;
+            echo $GET . "------\n";
             $resp = $class::onReceive($GET);
             $serv->send($fd, $resp);
         }

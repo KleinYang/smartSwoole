@@ -7,5 +7,6 @@ class Index
         var_dump($content['a']);
         $resp = json_encode($content['a']);
         return $resp;
+        //exit
     }
 }
