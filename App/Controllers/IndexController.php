@@ -1,6 +1,6 @@
 <?php
 namespace App\Controllers;
-class Index
+class IndexController
 {
     public function onReceive( $data ) {
         $content = json_decode($data, true);

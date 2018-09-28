@@ -135,13 +135,12 @@ class Server
         $fd = $param['fd'];
         $GET = $param['data'];
         if ($type == 1) {
-            $class = CTRL_PATH . "Index";
+            $class = CTRL_PATH . "IndexController";
             $ctrl = new $class();
             $resp = $ctrl->onReceive($GET);
             $this->sendMessage($serv, $fd, $resp);
         }else if($type != 1){
             $class = TCP_PATH . $this->redis->get($fd);
-            echo "classname:" . $class;
             echo $GET . "------\n";
             $resp = $class::onReceive($GET);
             $serv->send($fd, $resp);
@@ -209,8 +208,17 @@ class Server
     }
     public static function loadClass($class){
         $class=str_replace('\\', '/', $class);
-        $class=__DIR__ . "/../".$class.".php";
-        require_once $class;    
+//        if (strtolower(substr($class,-3)) === 'tcp'){
+//            $class= APP_PATH . 'Tcp/' .$class.".php";
+//        }elseif (strtolower(substr($class,-10)) === 'controller'){
+//            $class= APP_PATH . 'Controllers/' .$class.".php";
+//        }elseif (strtolower(substr($class,-5)) === 'model'){
+//            $class= APP_PATH . 'Models/' .$class.".php";
+//        }elseif (strtolower(substr($class,-4)) === 'view'){
+//            $class= APP_PATH . 'Views/' .$class.".php";
+//        }
+        var_dump($class);
+        require_once ROOT_PATH . $class . '.php';
     }
 
 

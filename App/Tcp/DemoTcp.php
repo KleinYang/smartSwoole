@@ -1,10 +1,11 @@
 <?php
-//test
+//demo
 namespace App\Tcp;
-class Test
+class DemoTcp
 {
     public function onReceive( $data ) {
-        $resp = json_encode("i am test");
+
+        $resp = json_encode($data);
         return $resp;
     }
 }

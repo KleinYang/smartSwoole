@@ -20,8 +20,8 @@ $setting = array(
     'tcp_enable' => true,
     'tcp' => [
 
-        ["tcp_host"=>"0.0.0.0","tcp_port"=>9505,"tcp_mode"=>SWOOLE_TCP,"class"=>"Demo"],
-        ["tcp_host"=>"0.0.0.0","tcp_port"=>3389,"tcp_mode"=>SWOOLE_TCP,"class"=>"Test"]
+        ["tcp_host"=>"0.0.0.0","tcp_port"=>9505,"tcp_mode"=>SWOOLE_TCP,"class"=>"DemoTcp"],
+        ["tcp_host"=>"0.0.0.0","tcp_port"=>3389,"tcp_mode"=>SWOOLE_TCP,"class"=>"TestTcp"]
     ]
 );
 
@@ -36,7 +36,7 @@ const HTTP_PORT     =    80;
 
 //PATH
 const DIR_PATH      =   __DIR__ . '/';
-const ROOT_PATH     =   DIR_PATH . '/../';
+const ROOT_PATH     =   DIR_PATH;
 const APP_PATH      =   ROOT_PATH . '/App/';
 const TCP_PATH      =   'App\\Tcp\\';
 const CTRL_PATH      =   'App\\Controllers\\';
